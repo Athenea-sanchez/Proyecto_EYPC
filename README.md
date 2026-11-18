@@ -1,6 +1,6 @@
-# Ensamblador Modular IA-32 en C
+# Ensamblador  IA-32 en C
 
-Implementación modular en lenguaje C de un ensamblador de dos pasadas para la arquitectura **Intel IA-32 (x86)**. El sistema toma un archivo fuente en lenguaje ensamblador (`.asm`), realiza su validación, análisis léxico, selección de reglas del repertorio IA-32, codificación binaria (`ModR/M` y formatos especiales), conversión a hexadecimal en formato *Little Endian* y almacenamiento estructurado en tablas de memoria.
+Implementación modular en lenguaje C de un ensamblador para la arquitectura **Intel IA-32 (x86)**. El sistema toma un archivo fuente en lenguaje ensamblador (`.asm`), realiza su validación, análisis léxico, selección de reglas del repertorio IA-32, codificación binaria (`ModR/M` y formatos especiales), conversión a hexadecimal en formato *Little Endian* y almacenamiento estructurado en tablas de memoria.
 
 ---
 
@@ -57,28 +57,6 @@ El diseño está dividido en 6 módulos independientes con responsabilidades est
 * Administra las matrices bidimensionales: **Tabla de Símbolos**, **Sección de Datos**, **Sección de Código** y **Referencias Pendientes**.
 * Ejecuta la segunda pasada para calcular desplazamientos relativos (`offset`) mediante complemento a 2 y parchar las instrucciones de salto (`JMP`, `JZ`, `JNZ`).
 
----
-
-##  Compilación y Ejecución en GitHub Codespaces
-
-Abre la terminal integrada en tu Codespace y ejecuta los comandos desde la carpeta raíz del repositorio:
-
-### 1. Compilar (Etapa actual: Módulos 1 y 2)
-```bash
-mkdir -p build
-gcc -Wall -Wextra -Iinclude test/test.c src/modulo_apertura.c src/lectura.c -o build/ensamblador
-```
-
-### 2. Ejecutar prueba
-```bash
-./build/ensamblador docs/prueba.asm
-```
-
-### 3. Compilar proyecto completo (Al integrar los 6 módulos)
-```bash
-gcc -Wall -Wextra -Iinclude src/*.c test/test.c -o build/ensamblador
-./build/ensamblador docs/prueba.asm
-```
 
 ---
 
