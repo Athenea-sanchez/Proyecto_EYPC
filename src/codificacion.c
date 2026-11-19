@@ -13,7 +13,7 @@ static void aMayusculasCod(char* dest, const char* orig) {
     dest[i] = '\0';
 }
 
-// Función 1: Traduce el nombre de un registro a su cadena binaria de 3 bits[cite: 14]
+// Función 1: Traduce el nombre de un registro a su cadena binaria de 3 bits
 char* convertirRegistroABinario(const char* nombre_registro) {
     char* res = (char*)calloc(4, sizeof(char));
     if (!res) return NULL;
@@ -39,15 +39,15 @@ char* convertirRegistroABinario(const char* nombre_registro) {
     return res;
 }
 
-// Función 2: Calcula los 2 bits del campo mod según el tipo de operando r/m[cite: 14]
+// Función 2: Calcula los 2 bits del campo mod según el tipo de operando r/m
 char* calcularBitsMod(TipoOperando tipo_rm) {
     char* mod = (char*)calloc(3, sizeof(char));
     if (!mod) return NULL;
 
     if (tipo_rm == OP_REGISTRO) {
-        strcpy(mod, "11"); // Direccionamiento directo registro-registro[cite: 14]
+        strcpy(mod, "11");
     } else if (tipo_rm == OP_MEMORIA) {
-        strcpy(mod, "00"); // Memoria indirecta base sin desplazamiento (se ajusta en ModR/M si hay disp)
+        strcpy(mod, "00");
     } else {
         strcpy(mod, "00");
     }
@@ -67,7 +67,7 @@ static void analizarMemoriaParaModRM(const char* expr_mem, char* mod_out, char* 
     strncpy(interior, expr_mem + 1, len - 2);
     interior[len - 2] = '\0';
 
-    // Quitar espacios internos para facilitar el análisis (ej. "EBX+4" o "EAX*4+2")
+    // Quitar espacios internos (ej. "EBX+4" o "EAX*4+2")
     char limpio[MAX_TOKEN];
     int k = 0;
     for (int i = 0; interior[i] != '\0'; i++) {
@@ -80,13 +80,11 @@ static void analizarMemoriaParaModRM(const char* expr_mem, char* mod_out, char* 
     // Caso 1: Direccionamiento escalado con '*' (ej. "[EAX*4+2]" -> requiere byte SIB)
     char* ptr_asterisco = strchr(limpio, '*');
     if (ptr_asterisco != NULL) {
-        // Extraer registro índice antes del '*'
         char reg_idx[MAX_TOKEN] = {0};
         int idx_len = (int)(ptr_asterisco - limpio);
         strncpy(reg_idx, limpio, idx_len);
         reg_idx[idx_len] = '\0';
 
-        // Extraer escala (1, 2, 4, 8)
         int escala = atoi(ptr_asterisco + 1);
         const char* ss = "00";
         if (escala == 2) ss = "01";
@@ -95,19 +93,14 @@ static void analizarMemoriaParaModRM(const char* expr_mem, char* mod_out, char* 
 
         char* bin_idx = convertirRegistroABinario(reg_idx);
 
-        // Buscar desplazamiento después de '+' o '-'
-        int disp = 0;
         char* ptr_mas = strchr(ptr_asterisco, '+');
         char* ptr_menos = strchr(ptr_asterisco, '-');
-        if (ptr_mas) disp = (int)strtol(ptr_mas + 1, NULL, 0);
-        else if (ptr_menos) disp = -(int)strtol(ptr_menos + 1, NULL, 0);
 
         // En IA-32, [index*scale + disp32] sin registro base usa mod=00, rm=100 (SIB), base=101 (disp32)
         strcpy(mod_out, "00");
-        strcpy(rm_out, "100"); // Escape a byte SIB
+        strcpy(rm_out, "100");
 
         char* bin_disp32 = convertirInmediatoABinario(ptr_mas ? ptr_mas + 1 : (ptr_menos ? ptr_menos : "0"), 32);
-        // Concatenar: Byte SIB (ss + index + 101) + Desplazamiento 32 bits
         sprintf(extra_bits_out, "%s%s101%s", ss, bin_idx, bin_disp32);
 
         free(bin_idx);
@@ -130,22 +123,22 @@ static void analizarMemoriaParaModRM(const char* expr_mem, char* mod_out, char* 
 
     if (limpio[i] == '+' || limpio[i] == '-') {
         char num_str[MAX_TOKEN];
-        strcpy(num_str, &limpio[i]); // Incluye signo '+' o '-'
+        strcpy(num_str, &limpio[i]);
         int disp = (int)strtol(num_str, NULL, 0);
 
         if (disp >= -128 && disp <= 127) {
-            strcpy(mod_out, "01"); // Desplazamiento de 8 bits (disp8)
+            strcpy(mod_out, "01");
             char* bin_disp8 = convertirInmediatoABinario(num_str, 8);
             strcpy(extra_bits_out, bin_disp8);
             free(bin_disp8);
         } else {
-            strcpy(mod_out, "10"); // Desplazamiento de 32 bits (disp32)
+            strcpy(mod_out, "10");
             char* bin_disp32 = convertirInmediatoABinario(num_str, 32);
             strcpy(extra_bits_out, bin_disp32);
             free(bin_disp32);
         }
     } else {
-        strcpy(mod_out, "00"); // Sin desplazamiento
+        strcpy(mod_out, "00");
     }
 }
 
@@ -166,7 +159,6 @@ char* construirByteModRM(
     char* rm = NULL;
     char extra_mem[48] = {0};
 
-    // Formato MR: r/m es destino, reg es origen (ej. MOV EAX, EBX o ADD EAX, EBX)[cite: 15]
     if (op_en == OP_EN_MR) {
         reg = convertirRegistroABinario(origen);
         if (tipo_dest == OP_MEMORIA) {
@@ -178,9 +170,7 @@ char* construirByteModRM(
             mod = calcularBitsMod(tipo_dest);
             rm = convertirRegistroABinario(destino);
         }
-    }
-    // Formato RM: reg es destino, r/m es origen (ej. MOV EAX, [EBX + 4] o MOV EAX, [eax*4+2])[cite: 6]
-    else if (op_en == OP_EN_RM) {
+    } else if (op_en == OP_EN_RM) {
         reg = convertirRegistroABinario(destino);
         if (tipo_orig == OP_MEMORIA) {
             char mod_mem[3], rm_mem[4];
@@ -191,9 +181,7 @@ char* construirByteModRM(
             mod = calcularBitsMod(tipo_orig);
             rm = convertirRegistroABinario(origen);
         }
-    }
-    // Formato MI: r/m es destino, reg lleva la extensión /0../7 (ej. ADD EAX, 10)
-    else if (op_en == OP_EN_MI) {
+    } else if (op_en == OP_EN_MI) {
         reg = (char*)calloc(4, sizeof(char));
         sprintf(reg, "%d%d%d", (extension_reg >> 2) & 1, (extension_reg >> 1) & 1, extension_reg & 1);
 
@@ -211,7 +199,6 @@ char* construirByteModRM(
         return resultado;
     }
 
-    // Concatenar [ mod (2 bits) | reg (3 bits) | r/m (3 bits) ] + bits extra si hubo memoria[cite: 14]
     sprintf(resultado, "%s%s%s%s", mod, reg, rm, extra_mem);
 
     free(mod);
@@ -220,7 +207,7 @@ char* construirByteModRM(
     return resultado;
 }
 
-// Función 4: Suma el código de registro (+rd) al opcode base en hexadecimal (ej. "B8" + "3" -> "BB")[cite: 13]
+// Función 4: Suma el código de registro (+rd) al opcode base en hexadecimal
 char* sumarHexadecimal(const char* opcode_hex, const char* valor_registro_hex) {
     char* res = (char*)calloc(8, sizeof(char));
     if (!res) return NULL;
@@ -231,7 +218,7 @@ char* sumarHexadecimal(const char* opcode_hex, const char* valor_registro_hex) {
     return res;
 }
 
-// Función 5: Convierte un número inmediato a cadena binaria (Little Endian por bytes si > 8 bits)[cite: 14]
+// Función 5: Convierte un número inmediato a cadena binaria (Little Endian por bytes)
 char* convertirInmediatoABinario(const char* valor_inmediato, int tamano_bits) {
     char* bin = (char*)calloc(tamano_bits + 1, sizeof(char));
     if (!bin) return NULL;
@@ -242,7 +229,6 @@ char* convertirInmediatoABinario(const char* valor_inmediato, int tamano_bits) {
     int num_bytes = tamano_bits / 8;
     int pos = 0;
 
-    // Genera los bits byte por byte en orden Little Endian (byte menos significativo primero)[cite: 14]
     for (int b = 0; b < num_bytes; b++) {
         uint8_t byte_actual = (uint8_t)((uval >> (b * 8)) & 0xFF);
         for (int bit = 7; bit >= 0; bit--) {
@@ -253,7 +239,7 @@ char* convertirInmediatoABinario(const char* valor_inmediato, int tamano_bits) {
     return bin;
 }
 
-// Auxiliar interna: Convierte un byte hexadecimal (ej. "B8") a 8 bits en texto ("10111000")
+// Auxiliar interna: Convierte un byte hexadecimal a 8 bits en texto
 static void hexByteABinario(const char* hex_byte, char* bin_out) {
     unsigned int val = (unsigned int)strtol(hex_byte, NULL, 16);
     for (int i = 7; i >= 0; i--) {
@@ -262,7 +248,7 @@ static void hexByteABinario(const char* hex_byte, char* bin_out) {
     bin_out[8] = '\0';
 }
 
-// Función 6: Procesa codificación especial (+rd en opcode e inmediatos, ej. MOV EAX, 10)[cite: 13]
+// Función 6: Procesa codificación especial (+rd en opcode e inmediatos)
 char* procesarCodificacionEspecial(ReglaInstruccionIA32 regla, Instruccion inst) {
     char* salida = (char*)calloc(128, sizeof(char));
     if (!salida) return NULL;
@@ -287,7 +273,6 @@ char* procesarCodificacionEspecial(ReglaInstruccionIA32 regla, Instruccion inst)
     hexByteABinario(opcode_final_hex, opcode_bin);
     strcpy(salida, opcode_bin);
 
-    // Si el segundo operando es inmediato (ej. MOV EAX, 10), agregar sus bits en Little Endian[cite: 13, 14]
     if (inst.tipo_op2 == OP_INMEDIATO) {
         char* inm_bin = convertirInmediatoABinario(inst.operando2, regla.tamano_bits);
         strcat(salida, inm_bin);
@@ -297,7 +282,7 @@ char* procesarCodificacionEspecial(ReglaInstruccionIA32 regla, Instruccion inst)
     return salida;
 }
 
-// Función 7: Coordinadora del Módulo 4 (entrega la cadena binaria completa al Módulo 5)
+// Función 7: Coordinadora del Módulo 4
 char* generarCadenaIntermediaModulo4(
     Instruccion inst,
     ReglaInstruccionIA32 regla,
@@ -307,7 +292,6 @@ char* generarCadenaIntermediaModulo4(
         return procesarCodificacionEspecial(regla, inst);
     }
 
-    // Ruta 1: Codificación Común (Opcode en binario + Byte ModR/M [+ SIB/Disp] [+ Inmediato])
     char* salida = (char*)calloc(128, sizeof(char));
     if (!salida) return NULL;
 
@@ -326,7 +310,6 @@ char* generarCadenaIntermediaModulo4(
     strcat(salida, modrm_bin);
     free(modrm_bin);
 
-    // Si es formato MI (ej. ADD EAX, 10), concatenar también el inmediato al final
     if (regla.op_en == OP_EN_MI && inst.tipo_op2 == OP_INMEDIATO) {
         char* inm_bin = convertirInmediatoABinario(inst.operando2, regla.tamano_bits);
         strcat(salida, inm_bin);
