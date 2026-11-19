@@ -40,6 +40,11 @@ typedef enum {
 } TipoCodificacion;
 
 typedef struct {
+    int numero_linea;
+    char* texto;
+} LineaFuente;
+
+typedef struct {
     char mnemonico[MAX_TOKEN];
     char operando1[MAX_TOKEN];
     char operando2[MAX_TOKEN];
