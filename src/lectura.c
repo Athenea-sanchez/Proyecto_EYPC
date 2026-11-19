@@ -109,7 +109,8 @@ static void asignarOpcodeBase(const char* mnemonico, Instruccion* inst) {
 
 // Función 1: Lee la siguiente línea apoyándose en leerLineaArchivo del Módulo 1
 int leerSiguienteLinea(FILE* archivo, char* buffer_linea, int tamano_max) {
-    int bytes_leidos = leerLineaArchivo(archivo, buffer_linea, tamano_max);
+    int dummy = 0
+    int bytes_leidos = leerLineaArchivo(archivo, buffer_linea, tamano_max, &dummy);
     if (bytes_leidos > 0) {
         return 1; // Línea leída con éxito
     }
