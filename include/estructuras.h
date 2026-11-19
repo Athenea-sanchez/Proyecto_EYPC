@@ -6,6 +6,12 @@
 #define MAX_TOKEN 64
 #define MAX_LINEA 512
 
+// Estructura para el Módulo 1 (línea cruda en memoria dinámica)
+typedef struct {
+    int numero_linea;
+    char* texto;
+} LineaFuente;
+
 // Categorías del Diccionario 1 (Módulo 2)
 typedef enum {
     CAT_VACIA_O_COMENTARIO,
