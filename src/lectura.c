@@ -73,7 +73,7 @@ static const DiccionarioOpcode DICCIONARIO_2[] = {
     {NULL,      "N/A", false}
 };
 
-/*-------FUNCIONES AUXILIARES INTERNAS-------------*/
+//Funciones auxialar
 
 // Pasa una palabra a mayúsculas para que no importe si escriben "mov" o "MOV"
 static void pasarAMayusculas(char* destino, const char* origen) {
@@ -98,18 +98,16 @@ static void asignarOpcodeBase(const char* mnemonico, Instruccion* inst) {
         }
     }
 
-    // Si es una etiqueta (ej. _start), no lleva opcode
+    // Si es una etiqueta (_start:), no lleva opcode
     strcpy(inst->opcode_base, "N/A");
     inst->requiere_opcode = false;
 }
 
-/* =========================================================================
-   FUNCIONES PRINCIPALES DEL MÓDULO 2 (LECTURA Y ANÁLISIS LÉXICO)
-   ========================================================================= */
-
+//Funciones modulo 2 
 // Función 1: Lee la siguiente línea apoyándose en leerLineaArchivo del Módulo 1
 int leerSiguienteLinea(FILE* archivo, char* buffer_linea, int tamano_max) {
-    int dummy = 0;
+    int dummy = 0; // Variable descartable para recibir por referencia el estado de salida de 
+    // leerLineaArchivo sin riesgo de Segmentation Fault
     int bytes_leidos = leerLineaArchivo(archivo, buffer_linea, tamano_max, &dummy);
     if (bytes_leidos > 0) {
         return 1; // Línea leída con éxito
@@ -152,7 +150,7 @@ CategoriaLinea clasificarConDiccionario(const char* linea_limpia) {
         return CAT_VACIA_O_COMENTARIO;
     }
 
-    // Si el último carácter es ':', es una etiqueta (ej. "_start:")
+    // Si el último carácter es ':', es una etiqueta 
     size_t len = strlen(linea_limpia);
     if (linea_limpia[len - 1] == ':') {
         return CAT_ETIQUETA;
@@ -173,7 +171,7 @@ CategoriaLinea clasificarConDiccionario(const char* linea_limpia) {
         }
     }
 
-    // Revisa si es declaración de variable con nombre (ej. "msg db 'Hola', 0")
+    // Revisa si es declaración de variable con nombre 
     char copia[MAX_LINEA];
     strncpy(copia, linea_limpia, MAX_LINEA - 1);
     copia[MAX_LINEA - 1] = '\0';
@@ -268,17 +266,17 @@ TipoOperando identificarTipoOperando(const char* operando) {
 
     size_t len = strlen(operando);
 
-    // Si empieza con '[' y cierra con ']', es acceso a memoria (ej. "[EBX + 4]")
+    // Si empieza con '[' y cierra con ']', es acceso a memoria 
     if (operando[0] == '[' && operando[len - 1] == ']') {
         return OP_MEMORIA;
     }
 
-    // Si empieza con dígito o signo negativo seguido de dígito, es número inmediato (decimal o 0x...)
+    // Si empieza con dígito o signo negativo seguido de dígito, es número inmediato 
     if (isdigit((unsigned char)operando[0]) || (operando[0] == '-' && len > 1 && isdigit((unsigned char)operando[1]))) {
         return OP_INMEDIATO;
     }
 
-    // Revisar si coincide con algún registro IA-32 (32, 16 u 8 bits)
+    // Revisar si coincide con algún registro  (32, 16 u 8 bits)
     char op_mayus[MAX_TOKEN];
     pasarAMayusculas(op_mayus, operando);
 
@@ -339,3 +337,4 @@ bool procesarLineaModulo2(FILE* archivo, Instruccion* instruccion_salida, Catego
 
     return false; // Se terminó el archivo (EOF)
 }
+
