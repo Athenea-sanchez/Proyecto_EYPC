@@ -1,4 +1,4 @@
-#include "modulo_apertura.h"
+﻿#include "modulo_apertura.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,7 +38,7 @@ FILE* abrirFlujoLectura(const char* ruta_archivo)
     return fopen(ruta_archivo, "r");
 }
 
-// regresa el tamaño del archivo
+// regresa el tamano del archivo
 long calcularTamanoArchivo(FILE* archivo)
 {
     
@@ -48,16 +48,16 @@ long calcularTamanoArchivo(FILE* archivo)
     if (fseek(archivo,0,SEEK_END)!=0) //usa fseek para buscar el final del archivo
         return -1;
     //ftell toma  la posición actual del indicador de posición actual dentro de un archivo
-    long tamaño= ftell(archivo); //guarda la posición del final del archivo en tamaño
+    long tamano= ftell(archivo); //guarda la posición del final del archivo en tamano
     rewind(archivo);//regrea el constador interno al byte 0
 
-    return tamaño;
+    return tamano;
 }
 
 //booleano que valida que el archivo no es este pues, vacio. Lo dice en el nombre :P
-bool validarArchivoNoVacio (long tamaño_bytes)
+bool validarArchivoNoVacio (long tamano_bytes)
 {
-    return tamaño_bytes >0;
+    return tamano_bytes >0;
 }
 
 void gestionarErrorApertura(int codigo_error, const char* ruta_archivo)
@@ -104,14 +104,14 @@ FILE* obtenerArchivoVerificado(const char* ruta_archivo,bool* estado_verificacio
         return NULL;
     }
 
-    long tamaño= calcularTamanoArchivo(archivo);
-    if (tamaño<0) //que no este inleible vdd
+    long tamano= calcularTamanoArchivo(archivo);
+    if (tamano<0) //que no este inleible vdd
     {
-        fprintf(stderr,"error, no se pudo calcular el tamaño del archivo");
+        fprintf(stderr,"error, no se pudo calcular el tamano del archivo");
         fclose(archivo);
         return NULL;
     } 
-    if(!validarArchivoNoVacio(tamaño))//que no este vacio vdd
+    if(!validarArchivoNoVacio(tamano))//que no este vacio vdd
     {
         fprintf(stderr,"error, el archivo esta vacio");
         fclose(archivo);

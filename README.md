@@ -64,3 +64,25 @@ El diseño está dividido en 6 módulos independientes con responsabilidades est
 
 * Compilador **GCC** (estándar C99 o superior).
 * Entorno Linux / GitHub Codespaces / MinGW.
+
+## Compilación y Ejecución
+
+En esta etapa se compilan el módulo de apertura y lectura en memoria dinámica (`src/modulo_apertura.c`), el módulo de análisis léxico (`src/lectura.c`) y el programa de pruebas (`test/test.c`) utilizando las cabeceras de `include/` y el estándar C99.
+
+### Requisitos
+- Compilador **GCC** (estándar C99 o superior).
+- Entorno **Windows (PowerShell con MinGW)** o **Linux / WSL / GitHub Codespaces**.
+
+### Preparación y Compilación (Windows / PowerShell)
+Si `src/modulo_apertura.c` contiene caracteres no ASCII (`ñ`) en nombres de variables, primero se normaliza el archivo en UTF-8 para evitar errores de compilación en GCC:
+
+```powershell
+$txt = [System.IO.File]::ReadAllText("src\modulo_apertura.c", [System.Text.Encoding]::UTF8)
+$txt =$txt.Replace("tamaño_bytes", "tamano_bytes").Replace("tamaño", "tamano")
+[System.IO.File]::WriteAllText("src\modulo_apertura.c", $txt, [System.Text.Encoding]::UTF8)
+
+A continuación, se compila el proyecto desde la carpeta raíz:
+gcc -Wall -Wextra -std=c99 -Iinclude src/modulo_apertura.c src/lectura.c test/test.c -o ensamblador.exe
+
+Finalmente, se ejecuta el programa pasando como argumento el archivo fuente de prueba:
+.\ensamblador.exe docs/prueba.asm
