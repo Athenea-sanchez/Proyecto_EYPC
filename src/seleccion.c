@@ -4,7 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 
-// Diccionario de reglas IA-32 para las instrucciones de esta etapa
+// Diccionario especifico para mov add y sub
 static const ReglaInstruccionIA32 DICCIONARIO_REGLAS[] = {
     // Mnemónico | Destino      | Origen       | Bits | Opcode | OP/En       | Ext | SumaReg | Bytes
     {"MOV",        OP_REGISTRO,   OP_INMEDIATO,  32,    "B8",    OP_EN_OI,     -1,   true,     5},
@@ -24,10 +24,10 @@ static const ReglaInstruccionIA32 DICCIONARIO_REGLAS[] = {
     {"SUB",        OP_MEMORIA,    OP_REGISTRO,   32,    "29",    OP_EN_MR,     -1,   false,    2},
     {"SUB",        OP_REGISTRO,   OP_INMEDIATO,  32,    "81",    OP_EN_MI,      5,   false,    6},
 
-    // Centinela de fin de tabla
+    // Maneo de errores cuand no hay operando
     {"",           OP_NINGUNO,    OP_NINGUNO,    0,     "",      OP_EN_INVALIDO, -1, false,    0}
 };
-
+//Convierte a mayusculas el origen y destino
 static void aMayusculasSel(char* dest, const char* orig) {
     int i = 0;
     while (orig[i] != '\0' && i < MAX_TOKEN - 1) {
@@ -68,20 +68,20 @@ int obtenerTamanoOperando(const char* operando, TipoOperando tipo) {
         }
         return -1; // Registro inválido
     }
-
+//Verifica que es un inmediato, lo convierte a long y reresa el tamaño indicado
     if (tipo == OP_INMEDIATO) {
         char* fin = NULL;
         strtol(op, &fin, 0);
         if (fin == op || *fin != '\0') return -1; // Número mal formado
         return 32; // Por defecto en modo BITS 32 se promueve a 32 bits
     }
-
+//verifica si hay registro y que tipo de registro es 
     if (tipo == OP_MEMORIA) {
         size_t len = strlen(op);
         if (len < 3 || op[0] != '[' || op[len - 1] != ']') return -1;
         // Verifica que adentro de [...] haya al menos un registro válido (ej. EAX, EBX en [eax*4+2] o [EBX+4])
-        if (strstr(op, "EAX") || strstr(op, "EBX") || strstr(op, "ECX") || strstr(op, "EDX") ||
-            strstr(op, "ESI") || strstr(op, "EDI") || strstr(op, "ESP") || strstr(op, "EBP")) {
+        if (strstr(op, "EAX") || strstr(op, "EBX") || strstr(op, "ECX") || strstr(op, "EDX") ||strstr(op, "ESI") || strstr(op, "EDI") || strstr(op, "ESP") || strstr(op, "EBP"))
+        {
             return 32;
         }
         return -1; // Memoria sin registro base válido
@@ -90,13 +90,13 @@ int obtenerTamanoOperando(const char* operando, TipoOperando tipo) {
     return 32;
 }
 
-// Función 2: Busca la regla exacta en el diccionario IA-32
+// Función 2: Busca la regla exacta en el diccionario 
 ReglaInstruccionIA32 buscarReglaEnDiccionario(
     const char* mnemonico,
     TipoOperando tipo_dest,
     TipoOperando tipo_orig,
     int tamano_bits) {
-
+//Si es una linea invalida
     ReglaInstruccionIA32 invalida = {"", OP_NINGUNO, OP_NINGUNO, 0, "", OP_EN_INVALIDO, -1, false, 0};
     if (mnemonico == NULL) return invalida;
 
@@ -119,7 +119,7 @@ ReglaInstruccionIA32 buscarReglaEnDiccionario(
 int determinarTipoCodificacion(ReglaInstruccionIA32 regla) {
     if (regla.op_en == OP_EN_INVALIDO) return 0;
 
-    // Si requiere sumar registro al opcode (+rb/+rw/+rd) o formato OI/O/D/NP -> Ruta Especial (2)
+    // Si requiere sumar registro al opcode (+rb/+rw/+rd) o formato OI/O/D/NP COD. ESPECIAL
     if (regla.suma_registro || regla.op_en == OP_EN_OI || regla.op_en == OP_EN_O) {
         return 2;
     }
@@ -128,7 +128,7 @@ int determinarTipoCodificacion(ReglaInstruccionIA32 regla) {
     return 1;
 }
 
-// Función 4: Valida que los operandos y tamaños sean compatibles en IA-32
+// Función 4: Valida que los operandos y tamaños sean compatibles 
 bool validarCompatibilidadOperandos(
     TipoOperando tipo_dest,
     TipoOperando tipo_orig,
@@ -137,12 +137,12 @@ bool validarCompatibilidadOperandos(
 
     if (tamano_dest <= 0 || tamano_orig <= 0) return false;
 
-    // En IA-32 no existe instrucción directa memoria-a-memoria (ej. MOV [EAX], [EBX])
+    // No existe instrucción directa memoria-a-memoria MANEJO DE ERROR
     if (tipo_dest == OP_MEMORIA && tipo_orig == OP_MEMORIA) {
         return false;
     }
 
-    // No se puede mover o sumar hacia un valor inmediato (ej. MOV 10, EAX)
+    // No se puede mover o sumar hacia un valor inmediato 
     if (tipo_dest == OP_INMEDIATO) {
         return false;
     }
