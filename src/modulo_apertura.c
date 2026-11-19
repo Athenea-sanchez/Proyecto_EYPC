@@ -39,7 +39,7 @@ FILE* abrirFlujoLectura(const char* ruta_archivo)
 }
 
 // regresa el tamaño del archivo
-long calcularTamañoArchivo(FILE* archivo)
+long calcularTamanoArchivo(FILE* archivo)
 {
     
     if (archivo==NULL)
@@ -137,6 +137,53 @@ int leerLineaArchivo(FILE* archivo, char* buffer_linea, int tamano_max, int* num
                 return 0;   //no hay error todo bien
             return -1;      // ya fue, persinense
         }
+
+// Funciones para memoria dinamica
+LineaFuente* cargarArchivoEnMemoria(FILE* archivo, int* total_lineas)
+{
+    if (archivo == NULL || total_lineas == NULL)
+        return NULL;
+
+    LineaFuente* lista = NULL;
+    char buffer[1024];
+    int contador = 0;
+
+    while (leerLineaArchivo(archivo, buffer, sizeof(buffer), &contador) > 0)
+    {
+        LineaFuente* temp = realloc(lista, contador * sizeof(LineaFuente));
+        if (temp == NULL)
+        {
+            for (int i = 0; i < contador - 1; i++)
+                free(lista[i].texto);
+            free(lista);
+            return NULL;
+        }
+        lista = temp;
+
+        lista[contador - 1].numero_linea = contador;
+        lista[contador - 1].texto = malloc(strlen(buffer) + 1);
+        if (lista[contador - 1].texto != NULL)
+        {
+            strcpy(lista[contador - 1].texto, buffer);
+        }
+    }
+
+    *total_lineas = contador;
+    return lista;
+}
+        
     (*num_linea)++; //incrementa el numero de linea leida
         return (int)strlen(buffer_linea);
     }
+
+void liberarArchivoEnMemoria(LineaFuente* lista, int total_lineas)
+{
+    if (lista == NULL)
+        return;
+
+    for (int i = 0; i < total_lineas; i++)
+    {
+        free(lista[i].texto);
+    }
+    free(lista);
+}
