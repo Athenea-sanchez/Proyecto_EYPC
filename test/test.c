@@ -1,7 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 #include "modulo_apertura.h"
 #include "lectura.h"
+#include "seleccion.h"
+#include "codificacion.h"
 
 // Funciones auxiliares para imprimir en texto legible lo que clasifica el Módulo 2
 const char* nombreCategoria(CategoriaLinea cat) {
@@ -30,11 +34,27 @@ const char* nombreTipoOperando(TipoOperando tipo) {
     }
 }
 
+// Auxiliar para visualizar la salida binaria del Módulo 4 convertida a bytes Hexadecimales
+void imprimirBinarioComoHex(const char* cadena_binaria) {
+    if (cadena_binaria == NULL) return;
+    size_t len = strlen(cadena_binaria);
+
+    for (size_t i = 0; i + 8 <= len; i += 8) {
+        char byte_str[9];
+        strncpy(byte_str, cadena_binaria + i, 8);
+        byte_str[8] = '\0';
+
+        unsigned int val = (unsigned int)strtol(byte_str, NULL, 2);
+        printf("%02X ", val);
+    }
+    printf("\n");
+}
+
 int main(int argc, char* argv[]) {
-    const char* ruta = (argc > 1) ? argv[1] : "prueba.asm";
+    const char* ruta = (argc > 1) ? argv[1] : "docs/prueba.asm";
     bool archivo_ok = false;
 
-    printf("=== PRUEBA MODULO 1 (APERTURA) Y MODULO 2 (LEXICO) ===\n");
+    printf("=== PRUEBA MODULOS 1, 2, 3 Y 4 (APERTURA, LEXICO, SELECCION Y CODIFICACION) ===\n");
     printf("Archivo objetivo: %s\n\n", ruta);
 
     // ---------------------------------------------------------
@@ -64,11 +84,10 @@ int main(int argc, char* argv[]) {
     }
     printf("\n\n");
 
-    // Regresa el archivo al inicio para que tu Módulo 2 actual lo pueda leer igual
     rewind(archivo);
 
     // ---------------------------------------------------------
-    // MÓDULO 2: LECTURA LÍNEA POR LÍNEA Y CLASIFICACIÓN
+    // MÓDULOS 2, 3 Y 4: LECTURA, SELECCIÓN Y CODIFICACIÓN
     // ---------------------------------------------------------
     Instruccion inst;
     CategoriaLinea categoria;
@@ -77,16 +96,43 @@ int main(int argc, char* argv[]) {
     while (procesarLineaModulo2(archivo, &inst, &categoria)) {
         printf("--------------------------------------------------\n");
         printf("Sentencia #%d:\n", num_sentencia++);
-        printf("  Categoria   : %s\n", nombreCategoria(categoria));
-        printf("  Mnemonico   : '%s'\n", inst.mnemonico);
-        printf("  Operando 1  : '%s' (%s)\n", inst.operando1, nombreTipoOperando(inst.tipo_op1));
-        printf("  Operando 2  : '%s' (%s)\n", inst.operando2, nombreTipoOperando(inst.tipo_op2));
-        printf("  Opcode Base : %s (Requiere opcode: %s)\n", 
-               inst.opcode_base, inst.requiere_opcode ? "SI" : "NO");
+        printf("  [M2] Categoria   : %s\n", nombreCategoria(categoria));
+        printf("  [M2] Mnemónico   : '%s'\n", inst.mnemonico);
+        printf("  [M2] Operando 1  : '%s' (%s)\n", inst.operando1, nombreTipoOperando(inst.tipo_op1));
+        printf("  [M2] Operando 2  : '%s' (%s)\n", inst.operando2, nombreTipoOperando(inst.tipo_op2));
+
+        // Ignorar directivas (BITS 32), etiquetas (_start:) y datos (msg db ...) en el codificador
+        if (categoria == CAT_DIRECTIVA || categoria == CAT_ETIQUETA || categoria == CAT_DATOS) {
+            printf("  [M3/M4] Omitida en codificador (Directiva / Etiqueta / Datos).\n");
+            continue;
+        }
+
+        // MÓDULO 3: Selección de regla IA-32 y validación de operandos
+        ReglaInstruccionIA32 regla;
+        int tipo_codificacion = 0;
+
+        if (!procesarInstruccionModulo3(inst, &regla, &tipo_codificacion)) {
+            printf("  [M3] AVISO: Instruccion no soportada en esta etapa.\n");
+            continue;
+        }
+
+        printf("  [M3] Regla IA-32 : Opcode=%s | Ruta=%s (%d)\n",
+               regla.opcode_hex,
+               (tipo_codificacion == 1) ? "COMUN (ModR/M)" : "ESPECIAL (+rd/Imm)",
+               tipo_codificacion);
+
+        // MÓDULO 4: Codificación binaria (ModR/M, SIB, Desplazamiento, Little Endian)
+        char* cadena_bin = generarCadenaIntermediaModulo4(inst, regla, tipo_codificacion);
+        if (cadena_bin != NULL) {
+            printf("  [M4] Binario     : %s\n", cadena_bin);
+            printf("  [M4] Hexadecimal : ");
+            imprimirBinarioComoHex(cadena_bin);
+            free(cadena_bin);
+        }
     }
 
     printf("--------------------------------------------------\n");
-    printf("\n=== FIN DE LECTURA Y CLASIFICACION ===\n");
+    printf("\n=== FIN DE PRUEBA DE MODULOS 1 AL 4 ===\n");
 
     liberarArchivoEnMemoria(lineas_memoria, total_lineas);
     fclose(archivo);
