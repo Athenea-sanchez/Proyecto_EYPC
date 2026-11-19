@@ -88,6 +88,7 @@ int main(int argc, char* argv[]) {
     printf("--------------------------------------------------\n");
     printf("\n=== FIN DE LECTURA Y CLASIFICACION ===\n");
 
+    liberarArchivoEnMemoria(lineas_memoria, total_lineas);
     fclose(archivo);
     return 0;
 }
