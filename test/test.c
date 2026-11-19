@@ -48,6 +48,26 @@ int main(int argc, char* argv[]) {
     printf("[M1 OK] Archivo abierto y verificado.\n\n");
 
     // ---------------------------------------------------------
+    // MÓDULO 1.5: CARGA EN MEMORIA DINÁMICA Y NÚMERO DE LÍNEA
+    // ---------------------------------------------------------
+    int total_lineas = 0;
+    LineaFuente* lineas_memoria = cargarArchivoEnMemoria(archivo, &total_lineas);
+    if (lineas_memoria == NULL) {
+        printf("[ABORTADO] Fallo al cargar en memoria dinamica.\n");
+        fclose(archivo);
+        return 1;
+    }
+
+    printf("[M1 MEMORIA OK] Se cargaron %d lineas en memoria dinamica:\n", total_lineas);
+    for (int i = 0; i < total_lineas; i++) {
+        printf("  Linea %d: %s", lineas_memoria[i].numero_linea, lineas_memoria[i].texto);
+    }
+    printf("\n\n");
+
+    // Regresa el archivo al inicio para que tu Módulo 2 actual lo pueda leer igual
+    rewind(archivo);
+
+    // ---------------------------------------------------------
     // MÓDULO 2: LECTURA LÍNEA POR LÍNEA Y CLASIFICACIÓN
     // ---------------------------------------------------------
     Instruccion inst;
