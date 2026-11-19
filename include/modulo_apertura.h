@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include "estructuras.h"
 
 bool ExtensionArchivo(const char* ruta_archivo);
 
@@ -19,6 +20,8 @@ FILE* obtenerArchivoVerificado(const char* ruta_archivo,bool* estado_verificacio
 
 int leerLineaArchivo(FILE* archivo,char* buffer_linea,int tamano_max, int*num_linea);
 
+LineaFuente* cargarArchivoEnMemoria(FILE* archivo, int* total_lineas);
+void liberarArchivoEnMemoria(LineaFuente* lista, int total_lineas);
 
 #endif
 
