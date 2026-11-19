@@ -126,9 +126,9 @@ FILE* obtenerArchivoVerificado(const char* ruta_archivo,bool* estado_verificacio
 
     
 }
-int leerLineaArchivo(FILE* archivo, char* buffer_linea, int tamano_max)
+int leerLineaArchivo(FILE* archivo, char* buffer_linea, int tamano_max, int* num_linea)
     {
-        if (archivo == NULL || buffer_linea == NULL || tamano_max <= 0)
+        if (archivo == NULL || buffer_linea == NULL || tamano_max <= 0 || num_linea == NULL)
             return -1;
 
         if (fgets(buffer_linea, tamano_max, archivo) == NULL)
@@ -137,5 +137,6 @@ int leerLineaArchivo(FILE* archivo, char* buffer_linea, int tamano_max)
                 return 0;   //no hay error todo bien
             return -1;      // ya fue, persinense
         }
+    (*num_linea)++; //incrementa el numero de linea leida
         return (int)strlen(buffer_linea);
     }
