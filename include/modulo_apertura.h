@@ -23,15 +23,15 @@ int leerLineaArchivo(FILE* archivo,char* buffer_linea,int tamano_max);
 #endif
 
 
-4.4 ARCHIVO MÓDULO 2.h -LECTURA
-Contiene las funciones encargadas de leer y analizar las líneas del ensamblador. 
+/* 4.4 ARCHIVO MÓDULO 2.h -LECTURA /*
+/* Contiene las funciones encargadas de leer y analizar las líneas del ensamblador. /* 
 
 #ifndef LECTURA_H
 #define LECTURA_H
 
 #include <stdio.h>
 #include <stdbool.h>
-//#include "estructuras.h"
+#include "estructuras.h"
 
 int leerSiguienteLinea(FILE* archivo, char* buffer_linea, int tamano_max);
 
