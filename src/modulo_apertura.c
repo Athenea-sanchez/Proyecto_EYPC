@@ -104,7 +104,7 @@ FILE* obtenerArchivoVerificado(const char* ruta_archivo,bool* estado_verificacio
         return NULL;
     }
 
-    long tamaño= calcularTamañoArchivo(archivo);
+    long tamaño= calcularTamanoArchivo(archivo);
     if (tamaño<0) //que no este inleible vdd
     {
         fprintf(stderr,"error, no se pudo calcular el tamaño del archivo");
@@ -137,7 +137,9 @@ int leerLineaArchivo(FILE* archivo, char* buffer_linea, int tamano_max, int* num
                 return 0;   //no hay error todo bien
             return -1;      // ya fue, persinense
         }
-
+            (*num_linea)++; //incrementa el numero de linea leida
+        return (int)strlen(buffer_linea);
+    }
 // Funciones para memoria dinamica
 LineaFuente* cargarArchivoEnMemoria(FILE* archivo, int* total_lineas)
 {
@@ -172,10 +174,6 @@ LineaFuente* cargarArchivoEnMemoria(FILE* archivo, int* total_lineas)
     return lista;
 }
         
-    (*num_linea)++; //incrementa el numero de linea leida
-        return (int)strlen(buffer_linea);
-    }
-
 void liberarArchivoEnMemoria(LineaFuente* lista, int total_lineas)
 {
     if (lista == NULL)
