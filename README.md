@@ -82,7 +82,7 @@ $txt =$txt.Replace("tamaño_bytes", "tamano_bytes").Replace("tamaño", "tamano")
 [System.IO.File]::WriteAllText("src\modulo_apertura.c", $txt, [System.Text.Encoding]::UTF8)
 
 A continuación, se compila el proyecto desde la carpeta raíz:
-gcc -Wall -Wextra -std=c99 -Iinclude src/modulo_apertura.c src/lectura.c test/test.c -o ensamblador.exe
+gcc -Wall -Wextra -std=c99 -Iinclude src/*test/test.c -o ensamblador.exe
 
 Finalmente, se ejecuta el programa pasando como argumento el archivo fuente de prueba:
-.\ensamblador.exe docs/prueba.asm
+./ensamblador.exe docs/prueba.asm
