@@ -23,6 +23,14 @@ typedef struct {
 } DiccionarioOpcode;
 
 static const DiccionarioCategoria DICCIONARIO_1[] = {
+    // En DICCIONARIO_1:
+    {"JMP",     CAT_CONTROL_FUNCIONES},
+    {"JZ",      CAT_CONTROL_FUNCIONES},
+    {"JE",      CAT_CONTROL_FUNCIONES},
+    {"JNZ",     CAT_CONTROL_FUNCIONES},
+    {"JNE",     CAT_CONTROL_FUNCIONES},
+    {"CALL",    CAT_CONTROL_FUNCIONES},
+    {"RET",     CAT_CONTROL_FUNCIONES},
     {"MOV",     CAT_MOV_DATOS},
     {"ADD",     CAT_OP_ARITMETICA},
     {"SUB",     CAT_OP_ARITMETICA},
@@ -50,6 +58,14 @@ static const DiccionarioCategoria DICCIONARIO_1[] = {
 };
 
 static const DiccionarioOpcode DICCIONARIO_2[] = {
+    // En DICCIONARIO_2:
+    {"JMP",     "EB",  true},
+    {"JZ",      "74",  true},
+    {"JE",      "74",  true},
+    {"JNZ",     "75",  true},
+    {"JNE",     "75",  true},
+    {"INT",     "CD",  true},
+    {"RET",     "C3",  true},
     {"MOV",     "89",  true},
     {"ADD",     "01",  true},
     {"SUB",     "29",  true},
@@ -337,4 +353,3 @@ bool procesarLineaModulo2(FILE* archivo, Instruccion* instruccion_salida, Catego
 
     return false; // Se terminó el archivo (EOF)
 }
-
