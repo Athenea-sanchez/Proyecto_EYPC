@@ -5,14 +5,17 @@
 #include <ctype.h>
 
 // Diccionario especifico para mov add y sub
+// Diccionario especifico para mov, add, sub, cmp, inc y xor
 static const ReglaInstruccionIA32 DICCIONARIO_REGLAS[] = {
     // Mnemónico | Destino      | Origen       | Bits | Opcode | OP/En       | Ext | SumaReg | Bytes
     {"MOV",        OP_REGISTRO,   OP_INMEDIATO,  32,    "B8",    OP_EN_OI,     -1,   true,     5},
+    {"MOV",        OP_REGISTRO,   OP_ETIQUETA,   32,    "B8",    OP_EN_OI,     -1,   true,     5},
     {"MOV",        OP_REGISTRO,   OP_REGISTRO,   32,    "89",    OP_EN_MR,     -1,   false,    2},
     {"MOV",        OP_REGISTRO,   OP_MEMORIA,    32,    "8B",    OP_EN_RM,     -1,   false,    2},
     {"MOV",        OP_MEMORIA,    OP_REGISTRO,   32,    "89",    OP_EN_MR,     -1,   false,    2},
     {"MOV",        OP_REGISTRO,   OP_INMEDIATO,  16,    "B8",    OP_EN_OI,     -1,   true,     3},
     {"MOV",        OP_REGISTRO,   OP_INMEDIATO,  8,     "B0",    OP_EN_OI,     -1,   true,     2},
+    {"MOV",        OP_REGISTRO,   OP_MEMORIA,    8,     "8A",    OP_EN_RM,     -1,   false,    2},
 
     {"ADD",        OP_REGISTRO,   OP_REGISTRO,   32,    "01",    OP_EN_MR,     -1,   false,    2},
     {"ADD",        OP_REGISTRO,   OP_MEMORIA,    32,    "03",    OP_EN_RM,     -1,   false,    2},
@@ -24,7 +27,16 @@ static const ReglaInstruccionIA32 DICCIONARIO_REGLAS[] = {
     {"SUB",        OP_MEMORIA,    OP_REGISTRO,   32,    "29",    OP_EN_MR,     -1,   false,    2},
     {"SUB",        OP_REGISTRO,   OP_INMEDIATO,  32,    "81",    OP_EN_MI,      5,   false,    6},
 
-    // Maneo de errores cuand no hay operando
+    {"CMP",        OP_REGISTRO,   OP_INMEDIATO,  8,     "80",    OP_EN_MI,      7,   false,    3},
+    {"CMP",        OP_REGISTRO,   OP_INMEDIATO,  32,    "81",    OP_EN_MI,      7,   false,    6},
+    {"CMP",        OP_REGISTRO,   OP_REGISTRO,   32,    "39",    OP_EN_MR,     -1,   false,    2},
+
+    {"INC",        OP_REGISTRO,   OP_NINGUNO,    32,    "40",    OP_EN_O,      -1,   true,     1},
+
+    {"XOR",        OP_REGISTRO,   OP_REGISTRO,   32,    "33",    OP_EN_RM,     -1,   false,    2},
+    {"XOR",        OP_REGISTRO,   OP_REGISTRO,   8,     "32",    OP_EN_RM,     -1,   false,    2},
+
+    // Manejo de errores cuando no hay operando
     {"",           OP_NINGUNO,    OP_NINGUNO,    0,     "",      OP_EN_INVALIDO, -1, false,    0}
 };
 //Convierte a mayusculas el origen y destino
@@ -39,7 +51,9 @@ static void aMayusculasSel(char* dest, const char* orig) {
 
 // Función 1: Determina el tamaño en bits (8, 16 o 32) del operando
 int obtenerTamanoOperando(const char* operando, TipoOperando tipo) {
-    if (operando == NULL || tipo == OP_NINGUNO) return 0;
+    if (tipo == OP_NINGUNO) return 32; // Para instrucciones de 1 operando como INC
+    if (operando == NULL) return 0;
+    if (tipo == OP_ETIQUETA) return 32; // Las direcciones de memoria son de 32 bits
 
     char op[MAX_TOKEN];
     aMayusculasSel(op, operando);
