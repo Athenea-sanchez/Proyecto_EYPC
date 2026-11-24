@@ -309,12 +309,13 @@ char* generarCadenaIntermediaModulo4(
     );
     strcat(salida, modrm_bin);
     free(modrm_bin);
-
+    
     if (regla.op_en == OP_EN_MI && inst.tipo_op2 == OP_INMEDIATO) {
         char* inm_bin = convertirInmediatoABinario(inst.operando2, regla.tamano_bits);
         strcat(salida, inm_bin);
         free(inm_bin);
     }
+
 
     return salida;
 }
