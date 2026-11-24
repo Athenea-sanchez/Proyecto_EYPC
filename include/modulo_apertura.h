@@ -25,5 +25,3 @@ void liberarArchivoEnMemoria(LineaFuente* lista, int total_lineas);
 
 #endif
 
-
-
