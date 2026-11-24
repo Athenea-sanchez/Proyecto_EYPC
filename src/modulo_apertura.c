@@ -1,4 +1,4 @@
-﻿#include "modulo_apertura.h"
+#include "modulo_apertura.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
