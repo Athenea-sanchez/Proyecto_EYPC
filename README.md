@@ -1,6 +1,6 @@
 # Ensamblador IA-32 en C
 
-Implementación modular en lenguaje C de un ensamblador para la arquitectura **Intel IA-32 (x86)**. El sistema toma un archivo fuente en lenguaje ensamblador (`.asm`), realiza su validación, análisis léxico, selección de reglas del repertorio IA-32, codificación binaria (`ModR/M` y formatos especiales), conversión a hexadecimal en formato *Little Endian* y almacenamiento estructurado en tablas de memoria con resolución de saltos en dos pasadas (*backpatching*).
+Implementación modular en lenguaje C de un ensamblador para la arquitectura **IA-32**. El sistema toma un archivo fuente en lenguaje ensamblador (`.asm`), realiza su validación, análisis léxico, selección de reglas del repertorio IA-32, codificación binaria (`ModR/M` y formatos especiales), conversión a hexadecimal en formato *Little Endian* y almacenamiento estructurado en tablas de memoria con resolución de saltos en dos pasadas (*backpatching*).
 
 ---
 
@@ -50,7 +50,7 @@ El diseño está dividido en 6 módulos independientes con responsabilidades est
 
 ### *Módulo 3 — Selección de Instrucción IA-32 (`seleccion.h` / `seleccion.c`)*
 - Calcula el tamaño en bits (`8`, `16`, `32`) de los operandos.
-- Valida compatibilidad de tipos y tamaños según las reglas de la arquitectura x86.
+- Valida compatibilidad de tipos y tamaños según las reglas de la arquitectura.
 - Consulta el diccionario estático IA-32 para obtener el opcode real, formato `OP/En` (`MR`, `RM`, `MI`, `OI`, `D`, `M`, `O`, `I`, `NP`), extensión `/0`–`/7` y suma de registro (`+rb`, `+rw`, `+rd`).
 - Determina la ruta de codificación hacia el Módulo 4 (**1 = Común**, **2 = Especial**).
 
@@ -81,7 +81,7 @@ El diseño está dividido en 6 módulos independientes con responsabilidades est
 
 El proyecto utiliza un único ejecutable principal (`test/test.c`) que recibe por parámetro la ruta del archivo `.asm` a ensamblar. Puedes compilar y ejecutar las pruebas mediante `Makefile` o manualmente desde la terminal.
 
-### Opción 1: Ejecución automatizada con Makefile (Recomendada)
+### Opción 1: Ejecución automatizada con Makefile 
 
 Desde la carpeta raíz del proyecto, ejecuta cualquiera de los siguientes comandos (en Windows puedes usar `mingw32-make` si `make` no está en el PATH):
 
