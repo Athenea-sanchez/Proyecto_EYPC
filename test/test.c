@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     const char* ruta = (argc > 1) ? argv[1] : "docs/prueba.asm";
     bool archivo_ok = false;
 
-    printf("                         PRUEBA CON EJERCICIO DE CLASE                \n");
+    printf("                         PRUEBA                           \n");
     printf("Archivo objetivo: %s\n\n", ruta);
 
   
