@@ -33,7 +33,7 @@ Implementación modular en lenguaje C de un ensamblador para la arquitectura **I
 │   └── test.c                      # Programa principal de pruebas (main)
 ├── Makefile                        # Automatización de compilación y batería de pruebas
 └── README.md                       # Documentación del proyecto
-
+```
 ## Arquitectura Modular (6 Etapas)
 
 El diseño está dividido en 6 módulos independientes con responsabilidades estrictas:
