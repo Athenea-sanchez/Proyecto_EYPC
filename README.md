@@ -122,3 +122,41 @@ Posteriormente, ejecuta `./ensamblador.exe` pasando como argumento el archivo de
 ./ensamblador.exe docs/sin_etiqueta_error.asm
 ./ensamblador.exe docs/etiqueta_doble_error.asm
 ```
+
+## Validación contra Ensamblador de Referencia (NASM)
+
+Para verificar la exactitud de la codificación IA-32 y el cálculo de desplazamientos relativos (*backpatching*), el volcado lineal de código máquina generado por el ensamblador se compara contra **NASM** con las optimizaciones de tamaño desactivadas (`-O0`).
+
+### En Windows (PowerShell)
+
+```powershell
+# 1. Ejecutar el ensamblador propio sobre el ejemplo oficial
+make oficial
+
+# 2. Ensamblar el mismo archivo con NASM (-O0) y mostrar los bytes en hexadecimal
+$nasm = (Get-ChildItem "$env:LOCALAPPDATA","$env:ProgramFiles","${env:ProgramFiles(x86)}" -Filter "nasm.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+& $nasm -f bin -O0 docs/ejemplo_oficial.asm -o ref.bin
+((Format-Hex ref.bin).Bytes | ForEach-Object { "{0:X2}" -f $_ }) -join " "
+Remove-Item ref.bin -ErrorAction SilentlyContinue
+```
+
+### En Linux / WSL / GitHub Codespaces (Bash)
+
+```bash
+# 1. Ejecutar el ensamblador propio sobre el ejemplo oficial
+make oficial
+
+# 2. Ensamblar el mismo archivo con NASM (-O0) y mostrar los bytes en hexadecimal
+nasm -f bin -O0 docs/ejemplo_oficial.asm -o /tmp/ref.bin && hexdump -v -e '1/1 "%02X "' /tmp/ref.bin && echo "" && rm -f /tmp/ref.bin
+```
+
+### Nota técnica sobre la comparativa (`ADD EAX, 5`)
+
+Al comparar `docs/ejemplo_oficial.asm`, se observa una diferencia esperada de 1 byte en la instrucción `ADD EAX, 5` y, consecuentemente, en el desplazamiento del salto `JMP FIN`:
+
+* **Nuestro ensamblador (23 bytes):** Codifica `ADD EAX, 5` mediante el formato general `MI` (`81 /0 id` $\rightarrow$ `81 C0 05 00 00 00`, 6 bytes), por lo que el salto hacia adelante `JMP FIN` abarca `0x0B` (11 bytes):
+  `B8 00 00 00 00 E9 0B 00 00 00 B8 0A 00 00 00 81 C0 05 00 00 00 89 C3`
+* **NASM `-O0` (22 bytes):** Aplica la forma corta exclusiva del registro acumulador `EAX` (`05 id` $\rightarrow$ `05 05 00 00 00`, 5 bytes), ajustando el desplazamiento de `JMP FIN` a `0x0A` (10 bytes):
+  `B8 00 00 00 00 E9 0A 00 00 00 B8 0A 00 00 00 05 05 00 00 00 89 C3`
+
+Ambas codificaciones son válidas en la arquitectura Intel IA-32.
