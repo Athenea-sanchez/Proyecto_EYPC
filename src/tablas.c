@@ -413,11 +413,11 @@ printf("\n======================================================================
         printf("Siguiente direccion libre en .data: 0x%08X\n", gestor->contador_datos);
     }
 // Solo si necesitamos la linea completa de todas lass instrucciones 
-    /*printf("\n================================================================================\n");
-    printf("                  4. VOLCADO LINEAL DE CODIGO MAQUINA (%u bytes)\n", gestor->longitud_buffer);
+    printf("\n================================================================================\n");
+    printf("                   CODIGO Final  (%u bytes)\n", gestor->longitud_buffer);
     printf("================================================================================\n");
     for (uint32_t i = 0; i < gestor->longitud_buffer; i++) {
         printf("%02X ", gestor->buffer_codigo[i]);
     }
-    printf("\n================================================================================\n");*/ 
+    printf("\n================================================================================\n");
 }
