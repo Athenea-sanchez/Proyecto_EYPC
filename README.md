@@ -122,41 +122,56 @@ Posteriormente, ejecuta `./ensamblador.exe` pasando como argumento el archivo de
 ./ensamblador.exe docs/sin_etiqueta_error.asm
 ./ensamblador.exe docs/etiqueta_doble_error.asm
 ```
+---
 
 ## Validación contra Ensamblador de Referencia (NASM)
 
-Para verificar la exactitud de la codificación IA-32 y el cálculo de desplazamientos relativos (*backpatching*), el volcado lineal de código máquina generado por el ensamblador se compara contra **NASM** con las optimizaciones de tamaño desactivadas (`-O0`).
+Para verificar la exactitud de la codificación IA-32 y el cálculo de desplazamientos relativos (*backpatching*), el volcado lineal de código máquina generado por el ensamblador se compara contra **NASM** con las optimizaciones desactivadas (`-O0`).
 
-### En Windows (PowerShell)
+### Consideraciones técnicas de la arquitectura IA-32
+
+Al comparar un ensamblador educativo basado en reglas generales IA-32 contra un ensamblador comercial como NASM, existen dos diferencias de optimización que deben normalizarse para obtener una comparación 1 a 1:
+
+1. **Formas cortas del registro acumulador (`EAX`):** En operaciones aritméticas y de comparación con inmediatos de 32 bits (`ADD`, `SUB`, `CMP`), nuestro ensamblador aplica la codificación general `MI` (`81 /0`, `81 /5`, `81 /7`, de 6 bytes), válida para cualquier registro de propósito general. NASM, incluso con `-O0`, utiliza los opcodes abreviados exclusivos de `EAX` (`05`, `2D`, `3D`, de 5 bytes).
+2. **Saltos condicionales cercanos (`rel32` vs `rel8`):** Nuestro ensamblador codifica todos los saltos condicionales (`JE`, `JNE`, `JZ`, `JNZ`, `JG`, `JL`) en formato cercano de 32 bits (`0F 84`, `0F 85`, etc., de 6 bytes). NASM codifica por defecto los saltos condicionales como saltos cortos de 8 bits (`74`, `75`, de 2 bytes) a menos que se especifique el modificador `NEAR`.
+
+###  Windows PowerShell
+
+El siguiente comando genera copias temporales en memoria/disco sin modificar los archivos originales de `docs/`, normalizando las reglas de codificación para comprobar que ambos ensambladores producen **exactamente los mismos bytes**:
 
 ```powershell
-# 1. Ejecutar el ensamblador propio sobre el ejemplo oficial
-make oficial
-
-# 2. Ensamblar el mismo archivo con NASM (-O0) y mostrar los bytes en hexadecimal
+# 1. Localizar el ejecutable de NASM instalado en el sistema
 $nasm = (Get-ChildItem "$env:LOCALAPPDATA","$env:ProgramFiles","${env:ProgramFiles(x86)}" -Filter "nasm.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
-& $nasm -f bin -O0 docs/ejemplo_oficial.asm -o ref.bin
-((Format-Hex ref.bin).Bytes | ForEach-Object { "{0:X2}" -f $_ }) -join " "
-Remove-Item ref.bin -ErrorAction SilentlyContinue
+
+$archivos = @(
+    "docs/ejemplo_oficial.asm",
+    "docs/multiples_saltos.asm"
+)
+
+foreach ($asm in $archivos) {
+    Write-Host "  COMPARACION: $asm" -ForegroundColor Cyan
+    Write-Host "================================================================================" -ForegroundColor Cyan
+
+    # 2. Sustituir EAX por EBX en ADD/SUB/CMP para evaluar el formato general MI (81 /r)
+    $contenido = Get-Content $asm -Raw
+    $contenidoPropio = $contenido -replace '\b(ADD|SUB|CMP)\s+EAX\b', '$1 EBX'
+    Set-Content "temp_propio.asm" $contenidoPropio
+
+    # 3. Agregar NEAR a saltos condicionales para que NASM genere rel32 (0F 8x)
+    $contenidoNasm = $contenidoPropio -replace '\b(JE|JNE|JZ|JNZ|JG|JL)\s+', '$1 NEAR '
+    Set-Content "temp_nasm.asm" $contenidoNasm
+
+    # 4. Ejecutar nuestro ensamblador y NASM (-O0)
+    ./ensamblador.exe temp_propio.asm
+    & $nasm -f bin -O0 temp_nasm.asm -o ref.bin
+
+    Write-Host "--------------------------------------------------------------------------------"
+    Write-Host "  REFERENCIA NASM (-O0 + NEAR) :" -ForegroundColor Green
+    Write-Host "--------------------------------------------------------------------------------"
+    ((Format-Hex ref.bin).Bytes | ForEach-Object { "{0:X2}" -f $_ }) -join " "
+    Write-Host "================================================================================"
+
+    # 5. Eliminar archivos temporales
+    Remove-Item temp_propio.asm, temp_nasm.asm, ref.bin -ErrorAction SilentlyContinue
+}
 ```
-
-### En Linux / WSL / GitHub Codespaces (Bash)
-
-```bash
-# 1. Ejecutar el ensamblador propio sobre el ejemplo oficial
-make oficial
-
-# 2. Ensamblar el mismo archivo con NASM (-O0) y mostrar los bytes en hexadecimal
-nasm -f bin -O0 docs/ejemplo_oficial.asm -o /tmp/ref.bin && hexdump -v -e '1/1 "%02X "' /tmp/ref.bin && echo "" && rm -f /tmp/ref.bin
-```
-
-### Nota técnica sobre la comparativa (`ADD EAX, 5`)
-
-Al comparar `docs/ejemplo_oficial.asm`, se observa una diferencia esperada de 1 byte en la instrucción `ADD EAX, 5` y, consecuentemente, en el desplazamiento del salto `JMP FIN`:
-
-* **Nuestro ensamblador (23 bytes):** Codifica `ADD EAX, 5` mediante el formato general `MI` (`81 /0 id` $\rightarrow$ `81 C0 05 00 00 00`, 6 bytes), por lo que el salto hacia adelante `JMP FIN` abarca `0x0B` (11 bytes):
-  `B8 00 00 00 00 E9 0B 00 00 00 B8 0A 00 00 00 81 C0 05 00 00 00 89 C3`
-* **NASM `-O0` (22 bytes):** Aplica la forma corta exclusiva del registro acumulador `EAX` (`05 id` $\rightarrow$ `05 05 00 00 00`, 5 bytes), ajustando el desplazamiento de `JMP FIN` a `0x0A` (10 bytes):
-  `B8 00 00 00 00 E9 0A 00 00 00 B8 0A 00 00 00 05 05 00 00 00 89 C3`
-
-Ambas codificaciones son válidas en la arquitectura Intel IA-32.
