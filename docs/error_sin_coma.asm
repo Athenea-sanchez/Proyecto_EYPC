@@ -1,0 +1,5 @@
+BITS 32
+INICIO:
+    MOV EAX 10
+    ADD EAX, 5
+    MOV EBX, EAX

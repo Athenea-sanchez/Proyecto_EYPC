@@ -1,0 +1,7 @@
+BITS 32
+
+INICIO:
+    MOV EAX, 1
+    JMP ETIQUETA_FANTASMA
+    ADD EAX, 2
+    RET
