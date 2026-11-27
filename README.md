@@ -1,6 +1,6 @@
 # Ensamblador IA-32 en C
 
-Implementación modular en lenguaje C de un **ensamblador de una sola pasada (*one-pass assembler*)** para la arquitectura **IA-32 (32 bits)**. El sistema toma un archivo fuente en lenguaje ensamblador (`.asm`), realiza su validación, análisis léxico, selección de reglas del repertorio IA-32, codificación binaria (`ModR/M`, `SIB` y formatos especiales), conversión a hexadecimal en formato *Little Endian*, resolución de saltos en una pasada mediante **Backpatching** y detención inmediata ante errores léxicos, sintácticos, semánticos o de memoria.
+Implementación modular en lenguaje C para la arquitectura **IA-32 (32 bits)**. El sistema toma un archivo fuente en lenguaje ensamblador (`.asm`), realiza su validación, análisis léxico, selección de reglas del repertorio IA-32, codificación binaria (`ModR/M`, `SIB` y formatos especiales), conversión a hexadecimal en formato *Little Endian*, resolución de saltos en una pasada mediante **Backpatching** y detención inmediata ante errores léxicos, sintácticos, semánticos o de memoria.
 
 ---
 
