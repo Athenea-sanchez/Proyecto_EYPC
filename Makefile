@@ -8,59 +8,47 @@ SRCS = src/modulo_apertura.c \
        src/codificacion.c \
        src/conversion.c \
        src/tablas.c \
+       src/errores.c \
        test/test.c
+
+PS = @powershell.exe -NoProfile -ExecutionPolicy Bypass -File comparar.ps1
 
 all: $(TARGET)
 
 $(TARGET): $(SRCS)
 	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET)
 
-# Ejecuta el archivo por defecto (docs/prueba.asm)
+# Casos exitosos (ensamblador propio + comparacion NASM)
 run: $(TARGET)
-	./$(TARGET)
+	$(PS) docs/prueba.asm
 
-# Ejecuta cada caso de prueba de la carpeta docs/ por separado
 oficial: $(TARGET)
-	./$(TARGET) docs/ejemplo_oficial.asm
+	$(PS) docs/ejemplo_oficial.asm
 
 clase: $(TARGET)
-	./$(TARGET) docs/clase_adelante_atras.asm
+	$(PS) docs/clase_adelante_atras.asm
 
 multiples: $(TARGET)
-	./$(TARGET) docs/multiples_saltos.asm
+	$(PS) docs/multiples_saltos.asm
 
+# Casos de error (validacion propia + rechazo en NASM)
 err-inexistente: $(TARGET)
-	./$(TARGET) docs/sin_etiqueta_error.asm
+	$(PS) docs/sin_etiqueta_error.asm
 
 err-doble: $(TARGET)
-	./$(TARGET) docs/etiqueta_doble_error.asm
+	$(PS) docs/etiqueta_doble_error.asm
 
-# Ejecuta toda la batería completa en una sola pasada
-test-all: $(TARGET)
-	@echo "=========================================="
-	@echo "1. PRUEBA BASE (docs/prueba.asm)"
-	@echo "=========================================="
-	-./$(TARGET) docs/prueba.asm
-	@echo "\n=========================================="
-	@echo "2. EJEMPLO OFICIAL GUIA (docs/ejemplo_oficial.asm)"
-	@echo "=========================================="
-	-./$(TARGET) docs/ejemplo_oficial.asm
-	@echo "\n=========================================="
-	@echo "3. EJERCICIO CLASE (docs/clase_adelante_atras.asm)"
-	@echo "=========================================="
-	-./$(TARGET) docs/clase_adelante_atras.asm
-	@echo "\n=========================================="
-	@echo "4. MULTIPLES SALTOS Y SIN USAR (docs/multiples_saltos.asm)"
-	@echo "=========================================="
-	-./$(TARGET) docs/multiples_saltos.asm
-	@echo "\n=========================================="
-	@echo "5. ERROR: SIN ETIQUETA (docs/sin_etiqueta_error.asm)"
-	@echo "=========================================="
-	-./$(TARGET) docs/sin_etiqueta_error.asm
-	@echo "\n=========================================="
-	@echo "6. ERROR: ETIQUETA DOBLE (docs/etiqueta_doble_error.asm)"
-	@echo "=========================================="
-	-./$(TARGET) docs/etiqueta_doble_error.asm
+err-variable: $(TARGET)
+	$(PS) docs/error_variable_no_declarada.asm
+
+err-coma: $(TARGET)
+	$(PS) docs/error_sin_coma.asm
+
+err-memoria: $(TARGET)
+	$(PS) docs/error_memoria_invalida.asm
+
+# Ejecuta y compara los 9 casos uno por uno
+test-all: run oficial clase multiples err-inexistente err-doble err-variable err-coma err-memoria
 
 clean:
 	rm -f $(TARGET)
