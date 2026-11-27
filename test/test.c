@@ -8,8 +8,8 @@
 #include "codificacion.h"
 #include "conversion.h"
 #include "tablas.h"
+#include "errores.h"
 
-// Funciones auxiliares para imprimir en texto legible lo que clasifica el Módulo 2
 const char* nombreCategoria(CategoriaLinea cat) {
     switch (cat) {
         case CAT_ETIQUETA:          return "ETIQUETA";
@@ -21,7 +21,7 @@ const char* nombreCategoria(CategoriaLinea cat) {
         case CAT_LLAMADA_SISTEMA:   return "LLAMADA_SISTEMA";
         case CAT_CONTROL_FUNCIONES: return "CONTROL_FUNCIONES";
         case CAT_DIRECTIVA:         return "DIRECTIVA";
-        default:                    return "DESCONOCIDO";
+        default:                    return "ERROR_DESCONOCIDO";
     }
 }
 
@@ -40,12 +40,12 @@ int main(int argc, char* argv[]) {
     const char* ruta = (argc > 1) ? argv[1] : "docs/prueba.asm";
     bool archivo_ok = false;
 
-    printf("                         PRUEBA                           \n");
+    iniciar_errores();
+
+    printf("                         PRUEBA                                   \n");
     printf("Archivo objetivo: %s\n\n", ruta);
 
-  
     // MÓDULO 1: APERTURA Y VERIFICACIÓN DEL ARCHIVO
-  
     FILE* archivo = obtenerArchivoVerificado(ruta, &archivo_ok);
     if (!archivo_ok || archivo == NULL) {
         printf("\n[FATAL ERROR] Fallo en Modulo 1.\n");
@@ -53,9 +53,7 @@ int main(int argc, char* argv[]) {
     }
     printf("[M1] Archivo abierto y verificado.\n\n");
 
-  
     // MÓDULO 1.5: CARGA EN MEMORIA DINÁMICA Y NÚMERO DE LÍNEA
-
     int total_lineas = 0;
     LineaFuente* lineas_memoria = cargarArchivoEnMemoria(archivo, &total_lineas);
     if (lineas_memoria == NULL) {
@@ -72,21 +70,16 @@ int main(int argc, char* argv[]) {
 
     rewind(archivo);
 
-    
     // INICIALIZACIÓN MÓDULO 6 (TABLAS Y BÚFER DE CÓDIGO)
-
     GestorTablas gestor;
     inicializarGestorTablas(&gestor, 0x00403000);
 
-  
     // FASE 1: MÓDULOS 2, 3, 4, 5 Y REGISTRO EN TABLAS (MÓDULO 6)
-
     Instruccion inst;
     CategoriaLinea categoria;
     int num_sentencia = 1;
     size_t numero_linea = 0;
-
-    while (procesarLineaModulo2(archivo, &inst, &categoria)) {
+while (procesarLineaModulo2(archivo, &inst, &categoria)) {
         numero_linea++;
 
         printf("--------------------------------------------------\n");
@@ -96,7 +89,23 @@ int main(int argc, char* argv[]) {
         printf("  [M2] Operando 1  : '%s' (%s)\n", inst.operando1, nombreTipoOperando(inst.tipo_op1));
         printf("  [M2] Operando 2  : '%s' (%s)\n", inst.operando2, nombreTipoOperando(inst.tipo_op2));
 
-        // 1. Directivas (BITS 32, SECTION .text, etc.)
+        // 0. Si Módulo 2 ya reportó error léxico/sintáctico, frenar inmediatamente
+        if (categoria == CAT_ERROR_DESCONOCIDO || hay_errores()) {
+            break;
+        }
+
+        // 0.1 Detectar falta de coma en instrucciones binarias (ej. "MOV EAX 10")
+        if ((categoria == CAT_MOV_DATOS || categoria == CAT_OP_ARITMETICA || categoria == CAT_OP_LOGICA) &&
+            strcasecmp(inst.mnemonico, "INC") != 0 &&
+            strcasecmp(inst.mnemonico, "DEC") != 0 &&
+            inst.tipo_op2 == OP_NINGUNO &&
+            strchr(inst.operando1, ' ') != NULL &&
+            strchr(inst.operando1, '[') == NULL) {
+            reportar_error(ERR_SINTACTICO, (int)numero_linea, "Falta coma separadora entre operandos", inst.operando1);
+            break;
+        }
+
+        // 1. Directivas (BITS 32, SECTION .text, .data, .text, etc.)
         if (categoria == CAT_DIRECTIVA) {
             printf("  [M3/M4] Omitida en codificador (Directiva).\n");
             continue;
@@ -104,18 +113,20 @@ int main(int argc, char* argv[]) {
 
         // 2. Etiquetas (ej. INICIO:, FIN:) -> Tabla de Símbolos
         if (categoria == CAT_ETIQUETA) {
-            if (registrarSimbolo(&gestor, inst.mnemonico, ".text", numero_linea)) {
-                printf("  [M6] Tabla Simbolos : Etiqueta '%s' registrada en 0x%08X\n",
-                       inst.mnemonico, gestor.contador_codigo);
+            if (!registrarSimbolo(&gestor, inst.mnemonico, ".text", numero_linea)) {
+                break;
             }
+            printf("  [M6] Tabla Simbolos : Etiqueta '%s' registrada en 0x%08X\n",
+                   inst.mnemonico, gestor.contador_codigo);
             continue;
         }
 
         // 3. Declaración de datos (ej. msg db 'Hola', 0) -> Tabla de Datos
         if (categoria == CAT_DATOS) {
-            if (agregarEntradaDatos(&gestor, inst, numero_linea)) {
-                printf("  [M6] Tabla Datos    : Variable '%s' agregada a .data\n", inst.mnemonico);
+            if (!agregarEntradaDatos(&gestor, inst, numero_linea)) {
+                break;
             }
+            printf("  [M6] Tabla Datos    : Variable '%s' agregada a .data\n", inst.mnemonico);
             continue;
         }
 
@@ -127,12 +138,13 @@ int main(int argc, char* argv[]) {
              strcasecmp(inst.mnemonico, "JNZ") == 0 ||
              strcasecmp(inst.mnemonico, "JNE") == 0)) {
 
-            if (agregarInstruccionSalto(&gestor, inst, numero_linea)) {
-                FilaCodigo* ultima = &gestor.codigo[gestor.total_codigo - 1];
-                printf("  [M6] Salto rel32    : %s | Estado: %s\n",
-                       ultima->codigo_maquina,
-                       ultima->pendiente_salto ? "PENDIENTE (Backpatching)" : "RESUELTO (Salto atras)");
+            if (!agregarInstruccionSalto(&gestor, inst, numero_linea)) {
+                break;
             }
+            FilaCodigo* ultima = &gestor.codigo[gestor.total_codigo - 1];
+            printf("  [M6] Salto rel32    : %s | Estado: %s\n",
+                   ultima->codigo_maquina,
+                   ultima->pendiente_salto ? "PENDIENTE (Backpatching)" : "RESUELTO (Salto atras)");
             continue;
         }
 
@@ -151,23 +163,54 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-       // 5.5 Resolver etiqueta de datos como operando inmediato (ej. mov esi, msg)
-     if (inst.tipo_op2 == OP_ETIQUETA) {
-         int idx_sim = buscarIndiceSimbolo(&gestor, inst.operando2);
-         if (idx_sim != -1) {
-             gestor.simbolos[idx_sim].usada = true;
-             snprintf(inst.operando2, sizeof(inst.operando2), "0x%X", gestor.simbolos[idx_sim].direccion);
-             inst.tipo_op2 = OP_INMEDIATO;
-         }
-     }
+        // 5.5 Resolver etiqueta/variable de datos sin corchetes (ej. mov esi, msg)
+        if (inst.tipo_op2 == OP_ETIQUETA) {
+            int idx_sim = buscarIndiceSimbolo(&gestor, inst.operando2);
+            if (idx_sim != -1) {
+                gestor.simbolos[idx_sim].usada = true;
+                snprintf(inst.operando2, sizeof(inst.operando2), "0x%X", gestor.simbolos[idx_sim].direccion);
+                inst.tipo_op2 = OP_INMEDIATO;
+            } else {
+                reportar_error(ERR_SEMANTICO, (int)numero_linea,
+                               "Variable o etiqueta no declarada en .data", inst.operando2);
+                break;
+            }
+        }
+        if (inst.tipo_op1 == OP_ETIQUETA) {
+            reportar_error(ERR_SEMANTICO, (int)numero_linea,
+                           "Destino invalido o variable no declarada", inst.operando1);
+            break;
+        }
+
+        // 5.6 Validar acceso a memoria con nombre de variable: [nombre_variable]
+        if (inst.tipo_op2 == OP_MEMORIA && inst.operando2[0] == '[') {
+            char interior[MAX_TOKEN] = {0};
+            size_t len = strlen(inst.operando2);
+            if (len > 2 && inst.operando2[len - 1] == ']') {
+                strncpy(interior, inst.operando2 + 1, len - 2);
+                interior[len - 2] = '\0';
+                if (!strstr(interior, "EAX") && !strstr(interior, "EBX") && !strstr(interior, "ECX") &&
+                    !strstr(interior, "EDX") && !strstr(interior, "ESI") && !strstr(interior, "EDI") &&
+                    !strstr(interior, "ESP") && !strstr(interior, "EBP") &&
+                    !strstr(interior, "eax") && !strstr(interior, "ebx") && !strstr(interior, "ecx") &&
+                    !strstr(interior, "edx") && !strstr(interior, "esi") && !strstr(interior, "edi") &&
+                    !strstr(interior, "esp") && !strstr(interior, "ebp")) {
+                    int idx_sim = buscarIndiceSimbolo(&gestor, interior);
+                    if (idx_sim == -1) {
+                        reportar_error(ERR_SEMANTICO, (int)numero_linea,
+                                       "Variable no declarada en .data", interior);
+                        break;
+                    }
+                }
+            }
+        }
 
         // 6. MÓDULO 3: Selección de regla IA-32 y validación de operandos
         ReglaInstruccionIA32 regla;
         int tipo_codificacion = 0;
 
         if (!procesarInstruccionModulo3(inst, &regla, &tipo_codificacion)) {
-            printf("  [M3] AVISO: Instruccion no soportada en esta etapa.\n");
-            continue;
+            break;
         }
 
         printf("  [M3] Regla IA-32 : Opcode=%s | Ruta=%s (%d)\n",
@@ -193,24 +236,40 @@ int main(int argc, char* argv[]) {
             }
             free(cadena_bin);
         }
+
+        if (hay_errores()) {
+            break;
+        }
     }
 
     printf("--------------------------------------------------\n");
 
+    // FASE 2: BACKPATCHING EN MEMORIA (solo se ejecuta si la Fase 1 pasó limpia)
+    bool exito_backpatching = true;
+    if (!hay_errores()) {
+        printf("\n[M6 BACKPATCHING] Resolviendo referencias pendientes en memoria...\n");
+        exito_backpatching = resolver_referencias(&gestor);
+    }
 
-    // FASE 2: BACKPATCHING EN MEMORIA Y AUDITORÍA DE SÍMBOLOS
+    // CORTE CENTRALIZADO: Abortar sin imprimir tablas ni código máquina si hubo algún error
+    if (!exito_backpatching || hay_errores()) {
+        fprintf(stderr, "\n================================================================================\n");
+        fprintf(stderr, "  ERROR FATAL %d error(es) No hauy codigo maquina\n",
+                obtener_total_errores());
+        fprintf(stderr, "================================================================================\n");
+        liberarArchivoEnMemoria(lineas_memoria, total_lineas);
+        fclose(archivo);
+        return 1;
+    }
 
-    printf("\n[M6 BACKPATCHING] Resolviendo referencias pendientes en memoria...\n");
-    bool exito_backpatching = resolver_referencias(&gestor);
     verificarEtiquetasSinUsar(&gestor);
 
     // SALIDA FINAL: IMPRESIÓN DE LAS TABLAS ORDENADAS
-
     imprimirTodasLasTablas(&gestor);
 
     printf("\n.... FIN .... :D\n");
 
     liberarArchivoEnMemoria(lineas_memoria, total_lineas);
     fclose(archivo);
-    return exito_backpatching ? 0 : 1;
+    return 0;
 }
